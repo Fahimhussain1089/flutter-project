@@ -1,0 +1,387 @@
+import 'package:flutter/material.dart';
+import 'package:shopping_list/models/category.dart';
+
+///data -> categories.dart **
+///data -> dummy_items.dart
+
+const categories = {
+	Categories.vegetables: Category(
+	'Vegetable', 				///title
+	Color.fromARGB(255,0,128),		///color	
+	),
+	Categories.fruit: Category(
+	'fruit',
+	Color.fromARGB(255,145,255,0),
+	),
+	Categories.meat: Category(
+	'meat',
+	Color.fromARGB(255,255,102,0),
+	),
+	Categories.dairy: Category(
+	'dairy',
+	Color.fromARGB(255,0,208,255),
+	),
+	Categories.carbs: Category(
+	'carbs',
+	Color.fromARGB(255,0,60,255),
+	),
+	Categories.sweets: Category(
+	'sweets',
+	Color.fromARGB(255,225,149,0),
+	),
+	Categories.spices: Category(
+	'spices',
+	Color.fromARGB(255,225,187,0),
+	),
+	Categories.convenience: Category(
+	'convenience',
+	Color.fromARGB(255,191,0,255),
+	),
+	Categories.hygiene: Category(
+	'hygiene',
+	Color.fromARGB(255,149,0,255),
+	),
+	Categories.other: Category(
+	'other',
+	Color.fromARGB(255,0,255,255),
+	),
+};
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+import 'package:shopping_list/models/grocery_item.dart';
+import 'package:shopping_list/models/category.dart';
+import 'package:shopping_list/data/categories.dart';
+
+	final groceryItems =[
+	GroceryItem(
+		id: 'a',
+		name: 'Milk',
+		quantity: 1,
+		category: categories[Categories,dairy]!),
+	GroceryItem(
+		id: 'b',
+		name: 'Bananas',
+		quantity: 5,
+		category: categories[Categories.fruit]!),
+	GroceryItem(
+		id: 'c',
+		name: 'Beef Steak',
+		quantity: ,
+		category: categories[Categories.meat]!),	
+
+];
+
+
+----------------------------------------------------------
+import 'package:flutter/material.dart';
+
+///models-> category.dart  **
+///models-> grocery_item.dart
+
+ 	enum Categories{
+	vegetables,
+	fruit,
+	meat,
+	dairy,
+	carbs,
+	sweets,
+	spices, 
+	convenience,
+	hygiene,
+	other
+	}
+	class Category{
+	const Category(this.title,this.color);
+	final String title;
+	final Color color;
+	}
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+import 'package:shopping_list/models/category.dart';
+
+class GroceryItem{   // ye (dummy item-> groceryItems ) ke variabel ko define kiya 
+	const GroceryItem({
+		
+			required this.id,
+			required this.name,
+			required this.quantity,
+			required this.category,
+			});
+		final String id;
+		final String name;
+		final int quantity;
+		final Category category;
+
+}
+
+------------------------------------------------------------------
+///widgets-> grocery_list.dart**
+///widgets-> new_item.dat 
+
+import 'package:flutter/material.dart';
+import 'package:shopping_list/data/dummy_items.dart';
+import 'package:shopping_list/models/grocery_item.dart';
+import 'package:shopping_list/widgets/new_item.dart';
+
+class GroceryList extends StatefulWidget{
+  const GroceryList ({super.key});
+
+  @override
+  State<GroceryList>  createState() => _GroceryListState();
+}
+
+class _GroceryListState extends State<GroceryList>{
+  final List<GroceryItem> _groceryItems = [];
+
+ @override
+ void initState(){
+   super.initState();
+   _loadItems();  //// ye methode only send ke gye list ko show krega  same screen pe 
+ }
+
+ // ye methode only send ke gye list ko show krega  same screen pe 
+  void _loadItem() async {
+    final url = Uri.https(
+          'flutter-prep-5798b-default-rtdb.firebaseio.com', 'shopping-list.json');
+    final response = await http.get(url);
+    final listData = json.decode(response.body);
+   
+  }
+
+  //there is meathode for add the + new page which is define the widget that name is (new_item) + (GroceryList )
+
+  void _addItem() async {
+    await Navigator.of(context).push<GroceryItem>(
+      MaterialPageRoute(
+        builder:(ctx) => const NewItem(),
+      ),
+    );
+    loadItems();  //// ye methode only send ke gye list ko show krega  same screen pe 
+       
+  }
+//jo item add huye use remove krene ke liye
+  void _removeItem(GroceryItem item){
+    setState((){
+      _groceryItems.remove(item);
+    });
+  }
+
+
+  @override
+  Widget build(BuildContext context){
+    Widget content  = const Center (child : Text('No items added yet.'));
+
+    if (_groceryItems.isNotEmpty){
+      content  = ListView.builder(
+        itemCount: _groceryItems.length,
+        itemBuilder: (ctx,index) => Dismissible(
+          onDismissed: (direction){
+            _removeItem(_groceryItems[index]);
+          },
+          key: ValueKey(_groceryItems[index].id),
+          child:    ListTile(
+            title:    Text(_groceryItems[index].name),
+            leading:  Container(
+            width:  24,
+            height: 24,
+            color: _groceryItems[index].category.color,
+          ),
+          trailing: Text(
+            _groceryItems[index].quantity.toString(),
+          ),
+        ),
+      ),
+
+    );
+
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Your Groceries'),  // next line will add NewList +
+        actions:[
+          IconButton(
+            onPressed: _addItem,
+            icon: const Icon(Icons.add), //this line will show "+"
+            ),
+          ],
+        ),
+    body: content, //ye content  if (_groceryItems.isNotEmpty){ se ayega
+      );
+    }
+}
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+import 'package:flutter/material.dart';
+
+import 'package:shopping_list/data/categories.dart';
+
+class NewItem extends StatefulWidget {
+  const NewItem({super.key});
+
+  @override
+  State<NewItem> createState() {
+    return _NewItemState();
+  }
+}
+
+class _NewItemState extends State<NewItem> {
+
+  final _formKey = GlobalKey<FormState>();  //ye padding pe kaam krega
+  var _enteredName = '';
+  var _enteredQuantity = 1;
+  var _selectedCategory = categories[Categories.vegetables]!;
+
+  void _saveItem() async {  //ye summit botton pe kaam krega
+    if(_formKey.currentState!.validate()){    //ye validated krega dono botton ko or for loop ki condition ko
+      _formKey.currentState!.save();         //save krega
+     final url = Uri.https(
+          'flutter-prep-5798b-default-rtdb.firebaseio.com', 'shopping-list.json');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json', //formate batega
+        },
+        body: json.encode(
+          {
+            'name': _enteredName,
+            'quantity': _enteredQuantity,
+            'category': _selectedCategory.title,
+          },
+        ),
+      );
+      print(response.body);
+      print(response.statusCode);
+
+      if(!context.mounted){
+        return; 
+      }
+  
+       Navigator.of(context).pop();
+    }
+  }
+//      Navigator.of(context).pop(             // ye ab back screen krega to grocery item pe 
+//        GroceryItem(
+//           id: DateTime.now().toString(),
+//           name: _enteredName,
+//           quantity: _enteredQuantity,
+//           category: _selectedCategory,
+//         ),
+//       ); 
+//      
+//    }
+//  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(   
+      appBar: AppBar(
+        title: const Text('Add a new item'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                maxLength: 50,
+                decoration: const InputDecoration(
+                  label: Text('Name'),
+                ),
+                validator: (value) {
+                  if(value == null || value.isEmpty|| value.trim().length <= 1 || value.trim().length > 50){
+                    return 'Must be between 1  and 50 characters';
+                  }
+
+                  return null ;
+                },
+                onSaved: (value){
+                    //if(value == null){
+                    //  return;
+                    //}    
+                   _enteredName = value!;
+
+                 }
+              ), // instead of TextField()
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      decoration: const InputDecoration(
+                        label: Text('Quantity'),
+                      ),
+                      keyboardType: TextInputType.number,
+                      initialValue: _enteredQuantity.toString(),
+                         validator: (value) {                    
+                 	   if(value == null ||
+                               value.isEmpty|| 
+                               int.tryParse(value) == null ||
+                               int.tryParse(value)! <= 0){
+                            return 'Number dek se likooo ,positive ';
+                           }
+
+                           return null ;
+                         },
+                         onSaved: (value){
+                           _enteredQuantity = int.parse(value!);     
+
+                         }
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DropdownButtonFormField(
+                      
+                      value: _selectedCategory,
+                      items: [
+                        for (final category in categories.entries)
+                          DropdownMenuItem(
+                            value: category.value,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 16,
+                                  height: 16,
+                                  color: category.value.color,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(category.value.title),
+                              ],
+                            ),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        setState((){    
+                          _selectedCategory = value!; 
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children:[
+                  TextButton(
+                    onPressed:(){
+                      _formKey.currentState!.reset();
+                    },
+                    child: const Text('Reset'),
+                  ),
+                  ElevatedButton(  //yan _saveItem kaam krega methode kam krega
+                    onPressed: _saveItem,
+                    child:const Text ('Add Item'),
+                  ),
+                ],
+              ),
+            ],
+
+          ),
+
+        ),
+      ),
+    );
+  }
+}
+---------------------------------------------------------------------------
+lecture  will be start

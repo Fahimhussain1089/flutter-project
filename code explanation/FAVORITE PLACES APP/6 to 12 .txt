@@ -1,0 +1,316 @@
+//models --> place.dart
+
+import 'package:uuid/uuid.dart';
+
+const uuid =Uuid();
+class Place{
+  Place({required this.title, required this.image}) : id = uuid.v4(); // id v4 type ki difine hogi  google kr lo
+  final String id;
+  final String title;
+  final File image;
+
+ }
+
+---------------------------------------------------------------------------------
+//screens--> add_place.dart***
+//screens--> places_detail.dart**
+
+//screens--> places.dart*
+//screens--> places.dart*
+import 'package:favorite_places/screens/add_place.dart';
+import 'package:favorite_places/widgets/places_list.dart';
+import 'package:flutter/material.dart';
+
+class PlacesScreen extends ConsumerWidget{
+  const PlacesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context,WidgetRef ref){
+   final userPlaces = ref.watch(userPlacesProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Your Places'),
+        actions: [
+          IconButton(
+            icon: const Icon( Icons.add),
+            onPressed: (){
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (ctx) => const AddPlaceScreen(),  //ye add_place.dart*** ko add krega
+                ),
+              );
+            },
+          ),
+        ],
+
+      ),
+       body: Padding(
+        padding : const EdgeInsets.all(8.0),
+        child : PlacesList(
+        places: userPlaces,
+        ),
+      ),
+    );
+  }
+}
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//screens--> add_place.dart***
+
+
+import 'dart:io';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
+
+import 'package:favorite_places/widgets/image_input.dart';
+import 'package:favorite_places/providers/user_places.dart';
+class AddPlaceScreen extends ConsumerStatefulWidget{
+  const AddPlaceScreen ({super.key});
+
+  @override
+  ConsumerState<AddPlaceScreen> createState(){
+    return _AddPlaceScreenState();
+  }
+}
+
+class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen>{
+  final _titleController = TextEditingController();
+  File? _selectedImage;
+
+  void _savePlace(){
+    final enteredTitle = _titleController.text;
+
+    if (enteredTitle.isEmpty || _selectedImage == null) {
+      return;
+    }
+
+    ref
+        .read(userPlacesProvider.notifier)
+        .addPlace(enteredTitle, _selectedImage!);
+
+    Navigator.of(context).pop();
+  }
+
+  @override
+  void dispose(){
+    _titleController.dispose();
+    super.dispose();
+  }
+  @override
+  Widget build(BuildContext context){
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Add new Place ye uper wali heading '),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            TextField(
+              decoration: const InputDecoration(labelText: 'Title'),
+              controller: _titleController,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onBackground,
+              ),
+            ),
+/////Image input
+            const SizedBox(height: 10),
+            ImageInput(
+              onPickImage: (image) {
+                _selectedImage = image;
+              },
+            ),
+            const SizedBox(height: 10),
+            LocationInput(),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _savePlace,
+              icon: const Icon(Icons.add),
+              label: const Text('ye button  add place'),
+
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+}
+
+
+
+------------------------------------------------------------------------------------------------
+//widgets--> places_list.dart*
+import 'package:flutter/material.dart';
+
+import 'package:favorite_places/models/place.dart';
+
+
+class PlacesList extends StatelessWidget{
+  const PlacesList ({super.key, required this.places});
+
+  final List<Place> places;
+
+  @override
+  Widget build(BuildContext context){
+    if (places.isEmpty){
+      return const Center(
+        child: Text ('No Places added yet'),
+      );
+    }
+    return ListView.builder(
+      itemCount: places.length,
+      itemBuilder: (ctx,index) => ListTile(
+        leading: CircleAvatar( //ye braket click huye image ko gol size provide krega  at your palce screen pe
+                radius: 26,
+                backgroundImage: FileImage(places[index].image),
+              ),
+        title: Text(
+          places[index].title,
+          style: Theme.of(context).textTheme.titleMedium!.copyWith(
+            color: Theme.of(context).colorScheme.onBackground,
+          ),
+        ),
+        onTap: (){
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (ctx) => PlaceDetailScreen(place:place[index]),
+             ),
+           ),
+         }
+      ),
+    );
+
+  }
+
+
+}
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//Widget --> image_input.dart
+
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
+class ImageInput extends StatefulWidget {
+  const ImageInput({super.key});
+
+  @override
+  State<ImageInput> createState() {
+    return _ImageInputState();
+  }
+}
+
+class _ImageInputState extends State<ImageInput> {
+  File? _selectedImage;
+
+  void _takePicture() async {
+    final imagePicker = ImagePicker();
+    final pickedImage =
+        await imagePicker.pickImage(source: ImageSource.camera, maxWidth: 600);
+
+    if (pickedImage == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedImage = File(pickedImage.path);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget content = TextButton.icon(
+      icon: const Icon(Icons.camera),
+      label: const Text('Take Picture'),
+      onPressed: _takePicture,
+    );
+
+    if (_selectedImage != null) {
+      content = GestureDetector(
+        onTap: _takePicture,
+        child: Image.file(
+          _selectedImage!,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          width: 1,
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+        ),
+      ),
+      height: 250,
+      width: double.infinity,
+      alignment: Alignment.center,
+      child: content,
+    );
+  }
+}
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//Widget --> location_inpurt.dart ++
+
+ 
+
+------------------------------------------------------------------------------------------------------------
+//screens--> place_detail.dart**
+
+import 'package:flutter/material.dart';
+
+import 'package:favorite_places/models/place.dart';
+
+class PlaceDetailScreen extends StatelessWidget {
+  const PlaceDetailScreen({super.key, required this.place});
+
+  final Place place;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(place.title),
+      ),
+      body: Stack(
+        children: [
+          Image.file(
+            place.image,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            ),
+          ],
+      ),
+    );
+  }
+}
+
+--------------------------------------------------------------------------------
+///provider-->>  user_places.dar
+
+import 'package:favorite_places/models/place.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class UserPlacesNotifier extends StateNotifier<List<Place>>{
+  UserPlacesNotifier() : super(const []);
+
+  void addPlace(String title){
+    final newPlace = Place(title: title);
+    state = [newPlace, ...state];
+  }
+}
+
+final userPlacesProvider =
+    StateNotifierProvider<UserPlacesNotifier, List<Place>>(
+      (ref) => UserPlacesNotifier(),
+);
+
+
+
+////14 completed
